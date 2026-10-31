@@ -1,0 +1,47 @@
+name: Mirror Gitee to GitHub
+
+# 每小时跑一次，同时支持手动触发
+on:
+  schedule:
+    - cron: '0 * * * *'
+  workflow_dispatch:
+
+# 让 workflow 有推送权限
+permissions:
+  contents: write
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout GitHub repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Mirror branches and tags from Gitee
+        env:
+          GIT_TERMINAL_PROMPT: 0
+        run: |
+          set -e
+
+          # 配置 GitHub 认证（用 workflow 自带的 token 推到当前仓库）
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
+
+          # 添加 Gitee 远程（公开仓库，无需认证）
+          git remote add gitee https://gitee.com/IRISBAI/Computer-seminar-assignment.git || true
+          git fetch gitee --prune --tags
+
+          # 同步 Gitee 上所有本地分支到 GitHub
+          # 排除 HEAD 符号引用
+          for branch in $(git for-each-ref --format='%(refname:short)' refs/remotes/gitee/ | grep -v '^gitee/HEAD$'); do
+            local_name="${branch#gitee/}"
+            echo "Syncing branch: $local_name"
+            git push origin "gitee/${local_name}:refs/heads/${local_name}"
+          done
+
+          # 同步所有标签
+          git push origin --tags
+
+          echo "Mirror completed."
