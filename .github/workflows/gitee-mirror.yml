@@ -36,8 +36,12 @@ jobs:
             branch="${ref#refs/heads/}"
             echo "=== Syncing branch: $branch ==="
             git fetch gitee "$ref"
-            # 如果 GitHub 上已有同名分支且非 fast-forward，用 --force-with-lease 保持 Gitee 为主
-            git push origin "FETCH_HEAD:refs/heads/$branch" || git push --force-with-lease origin "FETCH_HEAD:refs/heads/$branch"
+            # 只在 fast-forward 时推送；如果 GitHub 分支领先或分叉，跳过不覆盖
+            if git push origin "FETCH_HEAD:refs/heads/$branch"; then
+              echo "OK: $branch"
+            else
+              echo "SKIP: $branch (GitHub has newer or diverged commits, not overwriting)"
+            fi
           done
 
           echo "=== Branches synced ==="
