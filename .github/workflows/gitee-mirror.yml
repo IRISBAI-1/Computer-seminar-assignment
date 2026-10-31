@@ -20,28 +20,36 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Mirror branches and tags from Gitee
-        env:
-          GIT_TERMINAL_PROMPT: 0
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Mirror branches from Gitee
         run: |
           set -e
-
-          # 配置 GitHub 认证（用 workflow 自带的 token 推到当前仓库）
-          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
-
-          # 添加 Gitee 远程（公开仓库，无需认证）
           git remote add gitee https://gitee.com/IRISBAI/Computer-seminar-assignment.git || true
-          git fetch gitee --prune --tags
 
-          # 同步 Gitee 上所有本地分支到 GitHub
-          # 排除 HEAD 符号引用
-          for branch in $(git for-each-ref --format='%(refname:short)' refs/remotes/gitee/ | grep -v '^gitee/HEAD$'); do
-            local_name="${branch#gitee/}"
-            echo "Syncing branch: $local_name"
-            git push origin "gitee/${local_name}:refs/heads/${local_name}"
+          # 逐个拉取 Gitee 上的分支并推到 GitHub
+          # 用 ls-remote 直接读 Gitee 真实分支列表，避免本地 ref 干扰
+          git ls-remote --heads gitee | while read sha ref; do
+            branch="${ref#refs/heads/}"
+            echo "=== Syncing branch: $branch ==="
+            git fetch gitee "$ref"
+            # 如果 GitHub 上已有同名分支且非 fast-forward，用 --force-with-lease 保持 Gitee 为主
+            git push origin "FETCH_HEAD:refs/heads/$branch" || git push --force-with-lease origin "FETCH_HEAD:refs/heads/$branch"
           done
 
-          # 同步所有标签
-          git push origin --tags
+          echo "=== Branches synced ==="
 
-          echo "Mirror completed."
+      - name: Mirror tags from Gitee
+        run: |
+          set -e
+          # 逐个同步标签
+          git ls-remote --tags gitee | grep -v '\^{}$' | while read sha ref; do
+            tag="${ref#refs/tags/}"
+            echo "=== Syncing tag: $tag ==="
+            git fetch gitee "$ref"
+            git push origin "FETCH_HEAD:refs/tags/$tag" || true
+          done
+          echo "=== Tags synced ==="
