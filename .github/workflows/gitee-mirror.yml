@@ -1,9 +1,9 @@
 name: Mirror Gitee to GitHub
 
-# 每小时跑一次，同时支持手动触发
+# 每半天跑一次（UTC 0点和12点，即北京时间8点和20点），同时支持手动触发
 on:
   schedule:
-    - cron: '0 * * * *'
+    - cron: '0 */12 * * *'
   workflow_dispatch:
 
 # 让 workflow 有推送权限
