@@ -6,7 +6,7 @@
 设计师：张紫琳
 
 ## 原型链接
-Figma 在线原型：https://htmlpreview.github.io/?https://gitee.com/Whisper2008/Computer-seminar-assignment/raw/main/design/prototype/
+Figma 在线原型：Figma 在线原型：交互原型存放于仓库内的进制演示.html，下载后用浏览器打开体验。
 
 ## 文件说明
 - main_ui.png：主界面完整布局原型
