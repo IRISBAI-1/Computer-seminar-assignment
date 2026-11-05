@@ -6,7 +6,7 @@
 设计师：张紫琳
 
 ## 原型链接
-Figma 在线原型：https://www.figma.com/file/0r8kGq9xLwYvZ7dU8sN2mP/
+Figma 在线原型：https://htmlpreview.github.io/?https://gitee.com/Whisper2008/Computer-seminar-assignment/raw/main/design/prototype/
 
 ## 文件说明
 - main_ui.png：主界面完整布局原型
