@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>进制转换步骤演示器</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: "Microsoft Yahei", system-ui, sans-serif;
+            background: linear-gradient(135deg, #FFF7F0, #F0F8FF);
+            padding: 48px 20px;
+        }
+        .wrap {
+            max-width: 960px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            font-weight: 600;
+            color: #444;
+            margin-bottom: 32px;
+            letter-spacing: 2px;
+        }
+        .control-bar {
+            background: #fff;
+            padding: 18px 24px;
+            border-radius: 14px;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+        input, select, button {
+            padding: 9px 14px;
+            font-size: 15px;
+            border-radius: 10px;
+            border: 1px solid #e2e8f0;
+            outline: none;
+        }
+        input:focus, select:focus{
+            border-color:#70a5ff;
+        }
+        button {
+            cursor: pointer;
+            border: none;
+            transition: 0.2s;
+        }
+        #btnConvert {
+            background-color: #5490f0;
+            color: white;
+        }
+        #btnConvert:hover {
+            background-color: #3b7cdb;
+        }
+        #btnClear {
+            background-color: #cccccc;
+            color: #333;
+        }
+        #btnClear:hover {
+            background-color: #bbbbbb;
+        }
+        .content-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .panel {
+            background: #ffffff;
+            padding: 22px;
+            border-radius: 14px;
+            min-height: 340px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            position: relative;
+            overflow: hidden;
+        }
+        .panel h3 {
+            font-size: 17px;
+            color: #444;
+            margin-bottom:14px;
+            padding-bottom:10px;
+            border-bottom:1px solid #f1f1f1;
+        }
+        .step-content {
+            font-family: Consolas, monospace;
+            font-size:15px;
+            line-height:1.9;
+        }
+        .remain {
+            color:#e64949;
+            font-weight:bold;
+        }
+        .empty-tip {
+            color:#aaa;
+        }
+        #tipMsg {
+            margin-top:16px;
+            color:#e64949;
+            height:22px;
+        }
+        .nailong {
+            position: absolute;
+            right:16px;
+            bottom:16px;
+            width: 120px;  /* ✅ 放大！改成120px，想要更大就140、150 */
+            text-align:center;
+        }
+        .nailong img{
+            width:100%;
+        }
+        .nailong p{
+            font-size:12px;
+            color:#777;
+            margin-top:2px;
+        }
+    </style>
+</head>
+<body>
+    <div class="wrap">
+        <h1>进制转换步骤演示器</h1>
+        <div class="control-bar">
+            <input id="numInput" placeholder="请输入数字">
+            <select id="fromBase">
+                <option value="10">10进制</option>
+                <option value="2">2进制</option>
+                <option value="8">8进制</option>
+                <option value="16">16进制</option>
+            </select>
+            <span>→</span>
+            <select id="toBase">
+                <option value="2">2进制</option>
+                <option value="10">10进制</option>
+                <option value="8">8进制</option>
+                <option value="16">16进制</option>
+            </select>
+            <button id="btnConvert">转换</button>
+            <button id="btnClear">清空</button>
+        </div>
+        <div id="tipMsg"></div>
+        <div class="content-row">
+            <div class="panel">
+                <h3>演算步骤：</h3>
+                <div class="step-content" id="stepBox">
+                    <div class="empty-tip">请输入数字，选择进制后点击转换</div>
+                </div>
+            </div>
+            <div class="panel">
+                <h3>转换结果：</h3>
+                <div class="step-content" id="resultBox">
+                    <div class="empty-tip">等待计算</div>
+                </div>
+                <div class="nailong">
+                    <img id="nailongImg" src="nailong_normal.png" alt="奶龙">
+                    <p id="nailongText">奶龙陪你学进制✨</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script>
+const numInput = document.getElementById('numInput');
+const fromBase = document.getElementById('fromBase');
+const toBase = document.getElementById('toBase');
+const btnConvert = document.getElementById('btnConvert');
+const btnClear = document.getElementById('btnClear');
+const stepBox = document.getElementById('stepBox');
+const resultBox = document.getElementById('resultBox');
+const tipMsg = document.getElementById('tipMsg');
+const nailongImg = document.getElementById('nailongImg');
+const nailongText = document.getElementById('nailongText');
+
+const imgNormal = "nailong_normal.png";
+const imgOk = "nailong_ok.png";
+const imgLaugh = "nailong_laugh.png";
+
+function resetNailong(){
+    nailongImg.src = imgNormal;
+    nailongText.innerText = "奶龙陪你学进制✨";
+}
+
+btnClear.onclick = ()=>{
+    numInput.value = '';
+    tipMsg.innerText = '';
+    stepBox.innerHTML = `<div class="empty-tip">请输入数字，选择进制后点击转换</div>`;
+    resultBox.innerHTML = `<div class="empty-tip">等待计算</div>`;
+    resetNailong();
+}
+
+btnConvert.onclick = ()=>{
+    tipMsg.innerText = '';
+    const inputStr = numInput.value.trim();
+    const fBase = parseInt(fromBase.value);
+    const tBase = parseInt(toBase.value);
+
+    if(!inputStr){
+        tipMsg.innerText = '请输入需要转换的数字';
+        nailongImg.src = imgLaugh;
+        nailongText.innerText = "哈哈，忘记输入啦！";
+        return;
+    }
+    let num;
+    try{
+        num = parseInt(inputStr, fBase);
+        if(isNaN(num)) throw 1;
+    }catch{
+        tipMsg.innerText = '输入内容不合法，请输入对应进制允许的数字';
+        nailongImg.src = imgLaugh;
+        nailongText.innerText = "哈哈，输错咯！";
+        return;
+    }
+    if(num < 0){
+        tipMsg.innerText = '暂不支持负数转换';
+        nailongImg.src = imgLaugh;
+        nailongText.innerText = "哈哈，不能负数哦！";
+        return;
+    }
+    if(num === 0){
+        stepBox.innerText = `【${fBase}进制 → ${tBase}进制】\n0`;
+        resultBox.innerText = `结果：0`;
+        nailongImg.src = imgOk;
+        nailongText.innerText = "太棒啦✅";
+        return;
+    }
+
+    let steps = [`【${fBase}进制 → ${tBase}进制，除基取余】`];
+    let temp = num;
+    let resArr = [];
+    while(temp > 0){
+        let yu = temp % tBase;
+        resArr.push(yu.toString(tBase).toUpperCase());
+        steps.push(`${temp} ÷ ${tBase} = ${Math.floor(temp / tBase)} … 余数：<span class="remain">${yu.toString(tBase).toUpperCase()}</span>`);
+        temp = Math.floor(temp / tBase);
+    }
+    resArr.reverse();
+    steps.push(`余数逆序得到结果：${resArr.join('')}`);
+
+    stepBox.innerHTML = steps.join('<br>');
+    resultBox.innerText = `结果：${resArr.join('')}`;
+    nailongImg.src = imgOk;
+    nailongText.innerText = "算对啦！🎉";
+}
+</script>
+</body>
+</html>
