@@ -25,225 +25,157 @@
             margin-bottom: 32px;
             letter-spacing: 2px;
         }
-        .control-bar {
-            background: #fff;
-            padding: 18px 24px;
-            border-radius: 14px;
-            display: flex;
-            gap: 12px;
-            align-items: center;
-            flex-wrap: wrap;
-            margin-bottom: 20px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-        }
-        input, select, button {
-            padding: 9px 14px;
-            font-size: 15px;
-            border-radius: 10px;
-            border: 1px solid #e2e8f0;
-            outline: none;
-        }
-        input:focus, select:focus{
-            border-color:#70a5ff;
-        }
-        button {
-            cursor: pointer;
-            border: none;
-            transition: 0.2s;
-        }
-        #btnConvert {
-            background-color: #5490f0;
-            color: white;
-        }
-        #btnConvert:hover {
-            background-color: #3b7cdb;
-        }
-        #btnClear {
-            background-color: #cccccc;
-            color: #333;
-        }
-        #btnClear:hover {
-            background-color: #bbbbbb;
-        }
-        .content-row {
+        .container {
+            background: #ffffffcc;
+            border-radius: 20px;
+            padding: 32px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.08);
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
+            grid-template-columns: 1fr 220px;
+            gap: 24px;
+            align-items: start;
         }
         .panel {
-            background: #ffffff;
-            padding: 22px;
-            border-radius: 14px;
-            min-height: 340px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-            position: relative;
-            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
         }
-        .panel h3 {
-            font-size: 17px;
-            color: #444;
-            margin-bottom:14px;
-            padding-bottom:10px;
-            border-bottom:1px solid #f1f1f1;
+        .row {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            align-items: center;
         }
-        .step-content {
+        label {
+            font-weight: 500;
+            color: #333;
+        }
+        input, select, button {
+            padding: 10px 14px;
+            border-radius: 10px;
+            border: 1px solid #ddd;
+            font-size: 16px;
+        }
+        button {
+            background-color: #73a9ff;
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        button:hover {
+            background-color: #5893ee;
+        }
+        .result-box {
+            min-height: 220px;
+            background: #fff;
+            border: 1px solid #e6e6e6;
+            border-radius: 12px;
+            padding: 16px;
+            white-space: pre-line;
             font-family: Consolas, monospace;
-            font-size:15px;
-            line-height:1.9;
+            line-height: 1.6;
         }
-        .remain {
-            color:#e64949;
-            font-weight:bold;
+        .nailong-area {
+            text-align: center;
         }
-        .empty-tip {
-            color:#aaa;
+        .nailong-area img {
+            width: 180px;
+            transition: 0.3s;
         }
-        #tipMsg {
-            margin-top:16px;
-            color:#e64949;
-            height:22px;
-        }
-        .nailong {
-            position: absolute;
-            right:16px;
-            bottom:16px;
-            width: 120px;  /* ✅ 放大！改成120px，想要更大就140、150 */
-            text-align:center;
-        }
-        .nailong img{
-            width:100%;
-        }
-        .nailong p{
-            font-size:12px;
-            color:#777;
-            margin-top:2px;
+        .tip {
+            margin-top: 12px;
+            color: #666;
+            font-size: 14px;
         }
     </style>
 </head>
 <body>
     <div class="wrap">
         <h1>进制转换步骤演示器</h1>
-        <div class="control-bar">
-            <input id="numInput" placeholder="请输入数字">
-            <select id="fromBase">
-                <option value="10">10进制</option>
-                <option value="2">2进制</option>
-                <option value="8">8进制</option>
-                <option value="16">16进制</option>
-            </select>
-            <span>→</span>
-            <select id="toBase">
-                <option value="2">2进制</option>
-                <option value="10">10进制</option>
-                <option value="8">8进制</option>
-                <option value="16">16进制</option>
-            </select>
-            <button id="btnConvert">转换</button>
-            <button id="btnClear">清空</button>
-        </div>
-        <div id="tipMsg"></div>
-        <div class="content-row">
+        <div class="container">
             <div class="panel">
-                <h3>演算步骤：</h3>
-                <div class="step-content" id="stepBox">
-                    <div class="empty-tip">请输入数字，选择进制后点击转换</div>
+                <div class="row">
+                    <label>输入十进制整数：</label>
+                    <input id="numInput" placeholder="例如：100">
                 </div>
+                <div class="row">
+                    <label>目标进制：</label>
+                    <select id="baseSelect">
+                        <option value="2">二进制</option>
+                        <option value="8">八进制</option>
+                        <option value="16">十六进制</option>
+                    </select>
+                    <button id="calcBtn">开始计算</button>
+                    <button id="clearBtn">清空</button>
+                </div>
+                <div class="result-box" id="outBox">等待输入，点击开始计算查看演算步骤</div>
             </div>
-            <div class="panel">
-                <h3>转换结果：</h3>
-                <div class="step-content" id="resultBox">
-                    <div class="empty-tip">等待计算</div>
-                </div>
-                <div class="nailong">
-                    <img id="nailongImg" src="nailong_normal.png" alt="奶龙">
-                    <p id="nailongText">奶龙陪你学进制✨</p>
-                </div>
+            <div class="nailong-area">
+                <img id="nailongImg" src="./nailong_normal.png" alt="奶龙">
+                <div class="tip" id="nailongTip">准备就绪</div>
             </div>
         </div>
     </div>
 
-<script>
-const numInput = document.getElementById('numInput');
-const fromBase = document.getElementById('fromBase');
-const toBase = document.getElementById('toBase');
-const btnConvert = document.getElementById('btnConvert');
-const btnClear = document.getElementById('btnClear');
-const stepBox = document.getElementById('stepBox');
-const resultBox = document.getElementById('resultBox');
-const tipMsg = document.getElementById('tipMsg');
-const nailongImg = document.getElementById('nailongImg');
-const nailongText = document.getElementById('nailongText');
+    <script>
+        const numInput = document.getElementById('numInput');
+        const baseSelect = document.getElementById('baseSelect');
+        const calcBtn = document.getElementById('calcBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const outBox = document.getElementById('outBox');
+        const nailongImg = document.getElementById('nailongImg');
+        const nailongTip = document.getElementById('nailongTip');
 
-const imgNormal = "nailong_normal.png";
-const imgOk = "nailong_ok.png";
-const imgLaugh = "nailong_laugh.png";
+        calcBtn.onclick = function () {
+            const raw = numInput.value.trim();
+            const n = parseInt(raw);
+            const base = parseInt(baseSelect.value);
 
-function resetNailong(){
-    nailongImg.src = imgNormal;
-    nailongText.innerText = "奶龙陪你学进制✨";
-}
+            if (!/^-?\d+$/.test(raw) || isNaN(n)) {
+                outBox.textContent = '错误：请输入合法整数！';
+                nailongImg.src = './nailong_laugh.png';
+                nailongTip.textContent = '输入不对哦';
+                return;
+            }
 
-btnClear.onclick = ()=>{
-    numInput.value = '';
-    tipMsg.innerText = '';
-    stepBox.innerHTML = `<div class="empty-tip">请输入数字，选择进制后点击转换</div>`;
-    resultBox.innerHTML = `<div class="empty-tip">等待计算</div>`;
-    resetNailong();
-}
+            if (n === 0) {
+                outBox.textContent = `转换结果：0\n除基取余演示：数字为 0，直接为 0`;
+                nailongImg.src = './nailong_ok.png';
+                nailongTip.textContent = '搞定啦';
+                return;
+            }
 
-btnConvert.onclick = ()=>{
-    tipMsg.innerText = '';
-    const inputStr = numInput.value.trim();
-    const fBase = parseInt(fromBase.value);
-    const tBase = parseInt(toBase.value);
+            let text = `将十进制 ${n} 转为 ${base} 进制\n`;
+            let val = Math.abs(n);
+            const steps = [];
 
-    if(!inputStr){
-        tipMsg.innerText = '请输入需要转换的数字';
-        nailongImg.src = imgLaugh;
-        nailongText.innerText = "哈哈，忘记输入啦！";
-        return;
-    }
-    let num;
-    try{
-        num = parseInt(inputStr, fBase);
-        if(isNaN(num)) throw 1;
-    }catch{
-        tipMsg.innerText = '输入内容不合法，请输入对应进制允许的数字';
-        nailongImg.src = imgLaugh;
-        nailongText.innerText = "哈哈，输错咯！";
-        return;
-    }
-    if(num < 0){
-        tipMsg.innerText = '暂不支持负数转换';
-        nailongImg.src = imgLaugh;
-        nailongText.innerText = "哈哈，不能负数哦！";
-        return;
-    }
-    if(num === 0){
-        stepBox.innerText = `【${fBase}进制 → ${tBase}进制】\n0`;
-        resultBox.innerText = `结果：0`;
-        nailongImg.src = imgOk;
-        nailongText.innerText = "太棒啦✅";
-        return;
-    }
+            while (val > 0) {
+                const rem = val % base;
+                let ch;
+                if (rem < 10) ch = rem;
+                else ch = String.fromCharCode('A'.charCodeAt(0) + rem - 10);
+                steps.unshift(ch);
+                text += `${val} ÷ ${base} = ${Math.floor(val / base)}  ··· 余数 ${ch}\n`;
+                val = Math.floor(val / base);
+            }
 
-    let steps = [`【${fBase}进制 → ${tBase}进制，除基取余】`];
-    let temp = num;
-    let resArr = [];
-    while(temp > 0){
-        let yu = temp % tBase;
-        resArr.push(yu.toString(tBase).toUpperCase());
-        steps.push(`${temp} ÷ ${tBase} = ${Math.floor(temp / tBase)} … 余数：<span class="remain">${yu.toString(tBase).toUpperCase()}</span>`);
-        temp = Math.floor(temp / tBase);
-    }
-    resArr.reverse();
-    steps.push(`余数逆序得到结果：${resArr.join('')}`);
+            let resStr = steps.join('');
+            if (n < 0) resStr = '-' + resStr;
+            text += `\n最终结果：${resStr}`;
 
-    stepBox.innerHTML = steps.join('<br>');
-    resultBox.innerText = `结果：${resArr.join('')}`;
-    nailongImg.src = imgOk;
-    nailongText.innerText = "算对啦！🎉";
-}
-</script>
+            outBox.textContent = text;
+            nailongImg.src = './nailong_ok.png';
+            nailongTip.textContent = '计算完成！';
+        };
+
+        clearBtn.onclick = function () {
+            numInput.value = '';
+            outBox.textContent = '等待输入，点击开始计算查看演算步骤';
+            nailongImg.src = './nailong_normal.png';
+            nailongTip.textContent = '准备就绪';
+        };
+    </script>
 </body>
 </html>
+
