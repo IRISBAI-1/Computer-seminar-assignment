@@ -1,6 +1,7 @@
 import tkinter as tk
 from fractions import Fraction
-from tkinter import messagebox, ttk
+from pathlib import Path
+from tkinter import ttk
 
 
 DIGITS = "0123456789ABCDEF"
@@ -220,119 +221,272 @@ class BaseConverterApp:
         self.root = root
         root.title("进制转换步骤演示器")
         root.geometry("1000x720")
-        root.minsize(760, 560)
-        root.configure(bg="#f4f7fb")
+        root.minsize(760, 600)
 
         style = ttk.Style()
-        if "vista" in style.theme_names():
-            style.theme_use("vista")
-        style.configure("TFrame", background="#f4f7fb")
-        style.configure("Card.TFrame", background="#ffffff")
-        style.configure("Title.TLabel", background="#f4f7fb", foreground="#24364b",
-                        font=("Microsoft YaHei UI", 22, "bold"))
-        style.configure("CardTitle.TLabel", background="#ffffff", foreground="#24364b",
-                        font=("Microsoft YaHei UI", 12, "bold"))
-        style.configure("Hint.TLabel", background="#f4f7fb", foreground="#718096",
-                        font=("Microsoft YaHei UI", 9))
+        style.configure("TFrame", background="#ffffff")
+        style.configure("TLabel", background="#ffffff", foreground="#333333",
+                        font=("Microsoft YaHei UI", 10))
         style.configure("TButton", font=("Microsoft YaHei UI", 10), padding=(12, 7))
-        style.configure("Accent.TButton", font=("Microsoft YaHei UI", 10, "bold"))
+        style.configure("Accent.TButton", font=("Microsoft YaHei UI", 10, "bold"),
+                        padding=(12, 8))
+        style.map("Accent.TButton",
+                  background=[("!disabled", "#73a9ff"), ("active", "#5893ee")],
+                  foreground=[("!disabled", "#ffffff")])
+        style.configure("TCombobox", font=("Microsoft YaHei UI", 10), padding=5)
 
-        container = ttk.Frame(root, padding=24)
-        container.pack(fill="both", expand=True)
-        ttk.Label(container, text="进制转换步骤演示器", style="Title.TLabel").pack(pady=(4, 16))
-
-        controls = ttk.Frame(container, style="Card.TFrame", padding=16)
-        controls.pack(fill="x", pady=(0, 10))
-        self.value_var = tk.StringVar(value="10")
         self.from_var = tk.StringVar(value="10")
         self.to_var = tk.StringVar(value="2")
+        self.value_var = tk.StringVar(value="10")
         self.precision_var = tk.StringVar(value="12")
         self.rounding_var = tk.StringVar(value="截断")
 
-        ttk.Label(controls, text="输入数值").grid(row=0, column=0, sticky="w", padx=(0, 6))
-        value_entry = ttk.Entry(controls, textvariable=self.value_var, font=("Consolas", 12))
-        value_entry.grid(row=1, column=0, sticky="ew", padx=(0, 10), pady=(5, 0))
-        ttk.Label(controls, text="源进制").grid(row=0, column=1, sticky="w")
-        ttk.Combobox(controls, textvariable=self.from_var, values=("2", "8", "10", "16"),
-                     state="readonly", width=7).grid(row=1, column=1, padx=(0, 10), pady=(5, 0))
-        ttk.Label(controls, text="→ 目标进制").grid(row=0, column=2, sticky="w")
-        ttk.Combobox(controls, textvariable=self.to_var, values=("2", "8", "10", "16"),
-                     state="readonly", width=7).grid(row=1, column=2, padx=(0, 10), pady=(5, 0))
-        ttk.Label(controls, text="小数精度").grid(row=0, column=3, sticky="w")
-        ttk.Spinbox(controls, textvariable=self.precision_var, from_=1, to=MAX_PRECISION,
-                    width=5).grid(row=1, column=3, padx=(0, 10), pady=(5, 0))
-        ttk.Label(controls, text="舍入方式").grid(row=0, column=4, sticky="w")
-        ttk.Combobox(controls, textvariable=self.rounding_var,
-                     values=("截断", "四舍五入"), state="readonly",
-                     width=9).grid(row=1, column=4, padx=(0, 10), pady=(5, 0))
-        ttk.Button(controls, text="转换", style="Accent.TButton",
-                   command=self.convert).grid(row=1, column=5, padx=(0, 6), pady=(5, 0))
-        ttk.Button(controls, text="清空", command=self.clear).grid(row=1, column=6, pady=(5, 0))
-        controls.columnconfigure(0, weight=1)
-        value_entry.bind("<Return>", lambda _event: self.convert())
+        self.canvas = tk.Canvas(root, highlightthickness=0, bd=0)
+        self.canvas.pack(fill="both", expand=True)
+        self.canvas.bind("<Configure>", self._layout)
+        self._background_ids = []
+        self._card_shadow = self.canvas.create_polygon(0, 0, 0, 0, smooth=True)
+        self._card = self.canvas.create_polygon(0, 0, 0, 0, smooth=True)
+        self._title = self.canvas.create_text(
+            0, 0, text="进制转换步骤演示器", anchor="n",
+            font=("Microsoft YaHei UI", 23, "bold"), fill="#444444"
+        )
 
-        ttk.Label(container, text="支持正负数、小数及 2 / 8 / 10 / 16 进制；十六进制数位使用 A–F。",
-                  style="Hint.TLabel").pack(anchor="w", pady=(0, 12))
+        self.content = tk.Frame(self.canvas, bg="#ffffff")
+        self.content_window = self.canvas.create_window(
+            0, 0, window=self.content, anchor="nw"
+        )
+        self._build_content()
+        self._images = self._load_images()
+        self._set_status("normal", "准备就绪")
+        self.value_entry.focus_set()
 
-        panels = ttk.Frame(container)
-        panels.pack(fill="both", expand=True)
-        steps_card = ttk.Frame(panels, style="Card.TFrame", padding=14)
-        steps_card.pack(side="left", fill="both", expand=True, padx=(0, 6))
-        result_card = ttk.Frame(panels, style="Card.TFrame", padding=14)
-        result_card.pack(side="left", fill="both", expand=True, padx=(6, 0))
-        ttk.Label(steps_card, text="演算步骤", style="CardTitle.TLabel").pack(anchor="w", pady=(0, 8))
-        ttk.Label(result_card, text="转换结果", style="CardTitle.TLabel").pack(anchor="w", pady=(0, 8))
+    def _build_content(self):
+        self.content.grid_columnconfigure(0, weight=1)
+        self.content.grid_columnconfigure(1, minsize=190)
+        self.content.grid_rowconfigure(0, weight=1)
 
-        self.steps_text = self._text_area(steps_card)
-        self.result_text = self._text_area(result_card, height=8)
-        self._set_text(self.steps_text, "输入数值并选择进制，点击“转换”查看完整演算过程。")
-        self._set_text(self.result_text, "等待计算")
-        value_entry.focus_set()
+        panel = tk.Frame(self.content, bg="#ffffff")
+        panel.grid(row=0, column=0, sticky="nsew", padx=(0, 12))
+        panel.grid_columnconfigure(1, weight=1)
+        panel.grid_rowconfigure(4, weight=1)
 
-    @staticmethod
-    def _text_area(parent, height=None):
-        frame = ttk.Frame(parent, style="Card.TFrame")
-        text = tk.Text(frame, wrap="word", height=height, font=("Consolas", 10),
-                       bg="#ffffff", fg="#263445", relief="flat", padx=4, pady=4,
-                       state="disabled", spacing1=2, spacing3=3)
-        scrollbar = ttk.Scrollbar(frame, orient="vertical", command=text.yview)
-        text.configure(yscrollcommand=scrollbar.set)
-        text.pack(side="left", fill="both", expand=True)
+        tk.Label(panel, text="输入数值：", bg="#ffffff", fg="#333333",
+                 font=("Microsoft YaHei UI", 10)).grid(
+                     row=0, column=0, sticky="w", pady=(0, 12)
+                 )
+        self.value_entry = ttk.Entry(
+            panel, textvariable=self.value_var, font=("Consolas", 12)
+        )
+        self.value_entry.grid(row=0, column=1, sticky="ew", pady=(0, 12))
+        self.value_entry.bind("<Return>", lambda _event: self.convert())
+
+        tk.Label(panel, text="转换进制：", bg="#ffffff", fg="#333333",
+            font=("Microsoft YaHei UI", 10)
+        ).grid(row=1, column=0, sticky="w", pady=(0, 12))
+        actions = tk.Frame(panel, bg="#ffffff")
+        actions.grid(row=1, column=1, sticky="w", pady=(0, 12))
+        self.from_select = ttk.Combobox(
+            actions, textvariable=self.from_var, values=("2", "8", "10", "16"),
+            state="readonly", width=10
+        )
+        self.from_select.pack(side="left", padx=(0, 8))
+        ttk.Label(actions, text="→").pack(side="left", padx=(0, 8))
+        self.to_select = ttk.Combobox(
+            actions, textvariable=self.to_var, values=("2", "8", "10", "16"),
+            state="readonly", width=10
+        )
+        self.to_select.pack(side="left", padx=(0, 8))
+        ttk.Button(actions, text="开始计算", style="Accent.TButton",
+                   command=self.convert).pack(side="left", padx=(0, 6))
+        ttk.Button(actions, text="清空", command=self.clear).pack(side="left", padx=(0, 6))
+        ttk.Button(actions, text="精度", command=self._open_settings).pack(side="left")
+
+        self.hint_label = tk.Label(
+            panel, text="支持正负数、小数及 2 / 8 / 10 / 16 进制，十六进制数位使用 A–F",
+            bg="#ffffff", fg="#888888", font=("Microsoft YaHei UI", 9),
+            anchor="w", justify="left", wraplength=620
+        )
+        self.hint_label.grid(row=2, column=0, columnspan=2, sticky="ew", pady=(0, 12))
+
+        output_frame = tk.Frame(
+            panel, bg="#ffffff", highlightbackground="#e6e6e6",
+            highlightthickness=1
+        )
+        output_frame.grid(row=4, column=0, columnspan=2, sticky="nsew")
+        self.result_label = tk.Label(
+            panel, text="等待计算", bg="#ffffff", fg="#333333",
+            font=("Microsoft YaHei UI", 12, "bold"), anchor="w"
+        )
+        self.result_label.grid(row=3, column=0, columnspan=2, sticky="ew",
+                               pady=(0, 8))
+        self.output_text = tk.Text(
+            output_frame, wrap="word", font=("Consolas", 10),
+            bg="#ffffff", fg="#222222", relief="flat", padx=14, pady=12,
+            state="disabled", spacing1=2, spacing3=3
+        )
+        scrollbar = ttk.Scrollbar(
+            output_frame, orient="vertical", command=self.output_text.yview
+        )
+        self.output_text.configure(yscrollcommand=scrollbar.set)
+        self.output_text.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")
-        frame.pack(fill="both", expand=True)
-        return text
+
+        side_panel = tk.Frame(self.content, bg="#ffffff", width=190)
+        side_panel.grid(row=0, column=1, sticky="nsew")
+        side_panel.grid_propagate(False)
+        side_panel.grid_rowconfigure(0, weight=1)
+        self.image_label = tk.Label(side_panel, bg="#ffffff")
+        self.image_label.grid(row=0, column=0, sticky="s")
+        self.tip_label = tk.Label(
+            side_panel, text="准备就绪", bg="#ffffff", fg="#666666",
+            font=("Microsoft YaHei UI", 10), wraplength=180
+        )
+        self.tip_label.grid(row=1, column=0, sticky="n", pady=(10, 0))
+        self._set_output("等待输入，点击开始计算查看演算步骤")
+
+    def _load_images(self):
+        image_dir = Path(__file__).resolve().parent / "design" / "prototype"
+        images = {}
+        for state, filename, max_height in (
+            ("normal", "nailong_normal_tk.png", 270),
+            ("error", "nailong_laugh_tk.png", 210),
+            ("success", "nailong_ok_tk.png", 210),
+        ):
+            image = tk.PhotoImage(file=str(image_dir / filename))
+            scale = max(
+                1, (image.width() + 179) // 180,
+                (image.height() + max_height - 1) // max_height
+            )
+            images[state] = image.subsample(scale, scale)
+        return images
 
     @staticmethod
-    def _set_text(widget, content):
-        widget.configure(state="normal")
-        widget.delete("1.0", "end")
-        widget.insert("1.0", content)
-        widget.configure(state="disabled")
+    def _rounded_points(x1, y1, x2, y2, radius):
+        return (
+            x1 + radius, y1, x2 - radius, y1, x2, y1,
+            x2, y1 + radius, x2, y2 - radius, x2, y2,
+            x2 - radius, y2, x1 + radius, y2, x1, y2,
+            x1, y2 - radius, x1, y1 + radius, x1, y1,
+        )
+
+    def _layout(self, event):
+        if event.width < 2 or event.height < 2:
+            return
+        for item in self._background_ids:
+            self.canvas.delete(item)
+        self._background_ids.clear()
+
+        columns, rows = 24, 18
+        start, end = (255, 247, 240), (240, 248, 255)
+        for row in range(rows):
+            for column in range(columns):
+                ratio = (
+                    column / max(1, columns - 1)
+                    + row / max(1, rows - 1)
+                ) / 2
+                color = "#" + "".join(
+                    f"{round(a + (b - a) * ratio):02x}"
+                    for a, b in zip(start, end)
+                )
+                self._background_ids.append(self.canvas.create_rectangle(
+                    event.width * column / columns,
+                    event.height * row / rows,
+                    event.width * (column + 1) / columns + 1,
+                    event.height * (row + 1) / rows + 1,
+                    fill=color, outline="", tags="background"
+                ))
+
+        card_width = min(1000, event.width - 32)
+        card_height = max(460, event.height - 180)
+        left = (event.width - card_width) / 2
+        top = max(96, (event.height - card_height) / 2 + 20)
+        self.canvas.coords(
+            self._card_shadow,
+            *self._rounded_points(left, top + 6, left + card_width,
+                                  top + card_height + 6, 22)
+        )
+        self.canvas.itemconfigure(
+            self._card_shadow, fill="#e7e7e8", outline="", smooth=True,
+            splinesteps=12
+        )
+        self.canvas.coords(
+            self._card,
+            *self._rounded_points(left, top, left + card_width,
+                                  top + card_height, 22)
+        )
+        self.canvas.itemconfigure(
+            self._card, fill="#ffffff", outline="", smooth=True, splinesteps=12
+        )
+        self.canvas.coords(self._title, event.width / 2, 36)
+        self.canvas.coords(self.content_window, left + 32, top + 32)
+        self.canvas.itemconfigure(
+            self.content_window, width=card_width - 64, height=card_height - 64
+        )
+        self.canvas.tag_lower("background")
+
+    def _open_settings(self):
+        dialog = tk.Toplevel(self.root)
+        dialog.title("小数精度设置")
+        dialog.resizable(False, False)
+        dialog.transient(self.root)
+        dialog.grab_set()
+        content = ttk.Frame(dialog, padding=18)
+        content.pack(fill="both", expand=True)
+        ttk.Label(content, text="小数精度（1–64 位）").grid(
+            row=0, column=0, sticky="w", padx=(0, 12), pady=(0, 10)
+        )
+        ttk.Spinbox(content, textvariable=self.precision_var, from_=1,
+                    to=MAX_PRECISION, width=7).grid(row=0, column=1, pady=(0, 10))
+        ttk.Label(content, text="精度处理方式").grid(
+            row=1, column=0, sticky="w", padx=(0, 12)
+        )
+        ttk.Combobox(content, textvariable=self.rounding_var,
+                     values=("截断", "四舍五入"), state="readonly",
+                     width=12).grid(row=1, column=1)
+        ttk.Button(content, text="完成", command=dialog.destroy).grid(
+            row=2, column=0, columnspan=2, sticky="e", pady=(16, 0)
+        )
+
+    def _set_output(self, content):
+        self.output_text.configure(state="normal")
+        self.output_text.delete("1.0", "end")
+        self.output_text.insert("1.0", content)
+        self.output_text.configure(state="disabled")
+
+    def _set_status(self, state, tip):
+        self.image_label.configure(image=self._images[state])
+        self.tip_label.configure(text=tip)
 
     def convert(self):
         try:
             precision = int(self.precision_var.get())
+            from_base = int(self.from_var.get())
+            to_base = int(self.to_var.get())
             result, steps = convert_with_steps(
                 self.value_var.get(),
-                int(self.from_var.get()),
-                int(self.to_var.get()),
+                from_base,
+                to_base,
                 precision,
                 self.rounding_var.get(),
             )
         except (ValueError, ZeroDivisionError) as error:
-            messagebox.showerror("输入有误", str(error), parent=self.root)
+            self._set_output(f"错误：{error}")
+            self.result_label.configure(text="输入有误")
+            self._set_status("error", "输入不对哦")
             return
-        self._set_text(self.steps_text, steps)
-        self._set_text(
-            self.result_text,
-            f"结果：{result}\n\n({self.value_var.get().strip()})₍{self.from_var.get()}₎"
-            f" = ({result})₍{self.to_var.get()}₎",
+        self._set_output(steps)
+        self.result_label.configure(
+            text=f"结果：{result}    ({self.value_var.get().strip()})₍{from_base}₎"
+                 f" = ({result})₍{to_base}₎"
         )
+        self._set_status("success", "计算完成！")
 
     def clear(self):
         self.value_var.set("")
-        self._set_text(self.steps_text, "输入数值并选择进制，点击“转换”查看完整演算过程。")
-        self._set_text(self.result_text, "等待计算")
+        self._set_output("等待输入，点击开始计算查看演算步骤")
+        self.result_label.configure(text="等待计算")
+        self._set_status("normal", "准备就绪")
 
 
 def main():
