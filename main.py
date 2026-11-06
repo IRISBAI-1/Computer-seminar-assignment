@@ -220,7 +220,7 @@ class RoundedButton(tk.Canvas):
     def __init__(self, parent, text, command, accent=False, width=100,
                  background="#ffffff"):
         super().__init__(
-            parent, width=width, height=42, bg=background,
+            parent, width=width, height=46, bg=background,
             highlightthickness=0, bd=0, takefocus=True, cursor="hand2"
         )
         self.command = command
@@ -228,12 +228,12 @@ class RoundedButton(tk.Canvas):
         self.text = text
         self.hovered = False
         self.pressed = False
-        self.enabled = True
         self.shadow = self.create_polygon(0, 0, 0, 0, smooth=True)
         self.shape = self.create_polygon(0, 0, 0, 0, smooth=True)
+        self.highlight = self.create_line(0, 0, 0, 0, fill="", smooth=True)
         self.label = self.create_text(
             0, 0, text=text, anchor="center",
-            font=("Microsoft YaHei UI", 9, "bold" if accent else "normal")
+            font=("Microsoft YaHei UI", 10, "bold" if accent else "normal")
         )
         self.bind("<Configure>", self._draw)
         self.bind("<Enter>", self._on_enter)
@@ -260,33 +260,41 @@ class RoundedButton(tk.Canvas):
         height = self.winfo_height()
         if width < 2 or height < 2:
             return
-        inset = 2 if self.pressed else 0
+        inset = 1 if self.pressed else 0
         self.coords(
-            self.shadow,
-            *self._rounded_points(3, 4, width - 3, height - 2, 14)
+            self.shadow, *self._rounded_points(
+                3, 4, width - 3, height - 2, 18
+            )
         )
         self.itemconfigure(
-            self.shadow,
-            fill="#d9e3f2" if self.accent else "#e8edf4",
+            self.shadow, fill="#dce5f2" if self.accent else "#e7e8ed",
             outline=""
         )
         self.coords(
             self.shape,
             *self._rounded_points(
-                2, 1 + inset, width - 4, height - 5 + inset, 14
+                2, 1 + inset, width - 4, height - 5 + inset, 18
             )
         )
         if self.accent:
-            fill = "#376fd0" if self.pressed else (
-                "#6395ed" if self.hovered else "#4f86e8"
+            fill = "#0063d1" if self.pressed else (
+                "#1684ff" if self.hovered else "#007aff"
             )
             text_color = "#ffffff"
         else:
-            fill = "#e7eef9" if self.pressed else (
-                "#edf2fa" if self.hovered else "#f5f7fb"
+            fill = "#e5e5ea" if self.pressed else (
+                "#eaeaef" if self.hovered else "#f2f2f7"
             )
-            text_color = "#354b68"
-        self.itemconfigure(self.shape, fill=fill, outline="")
+            text_color = "#1c1c1e"
+        self.itemconfigure(
+            self.shape, fill=fill,
+            outline="#ffffff" if not self.accent else "",
+            width=1 if not self.accent else 0
+        )
+        self.coords(self.highlight, 18, 2 + inset, width - 20, 2 + inset)
+        self.itemconfigure(
+            self.highlight, fill="#ffffff" if self.accent and not self.pressed else ""
+        )
         self.coords(self.label, width / 2, height / 2 + inset)
         self.itemconfigure(self.label, fill=text_color)
 
@@ -333,45 +341,46 @@ class BaseConverterApp:
         root.title("进制转换步骤演示器")
         root.geometry("1000x720")
         root.minsize(760, 600)
+        root.configure(bg="#f2f2f7")
 
         style = ttk.Style()
         style.theme_use("clam")
-        style.configure("TFrame", background="#ffffff")
-        style.configure("TLabel", background="#ffffff", foreground="#334155",
+        style.configure("TFrame", background="#f2f2f7")
+        style.configure("TLabel", background="#f2f2f7", foreground="#1c1c1e",
                         font=("Microsoft YaHei UI", 10))
         style.configure(
-            "TButton", font=("Microsoft YaHei UI", 9), padding=(12, 8),
-            background="#f3f6fb", foreground="#42536b", borderwidth=0,
+            "TButton", font=("Microsoft YaHei UI", 10), padding=(14, 9),
+            background="#f2f2f7", foreground="#1c1c1e", borderwidth=0,
             focusthickness=0
         )
         style.map(
             "TButton",
-            background=[("pressed", "#e2eaf5"), ("active", "#e9eff8")],
-            foreground=[("disabled", "#a0a9b8")]
+            background=[("pressed", "#e5e5ea"), ("active", "#eaeaef")],
+            foreground=[("disabled", "#aeaeb2")]
         )
         style.configure(
-            "Accent.TButton", font=("Microsoft YaHei UI", 9, "bold"),
-            padding=(16, 8), background="#4f86e8", foreground="#ffffff"
+            "Accent.TButton", font=("Microsoft YaHei UI", 10, "bold"),
+            padding=(16, 9), background="#007aff", foreground="#ffffff"
         )
         style.map(
             "Accent.TButton",
-            background=[("pressed", "#356dcc"), ("active", "#4079dc"),
-                        ("!disabled", "#4f86e8")],
+            background=[("pressed", "#0063d1"), ("active", "#1684ff"),
+                        ("!disabled", "#007aff")],
             foreground=[("!disabled", "#ffffff")]
         )
         style.configure(
-            "TCombobox", font=("Microsoft YaHei UI", 10), padding=(8, 6),
-            fieldbackground="#fbfcff", background="#f3f6fb",
-            foreground="#334155", arrowcolor="#64748b"
+            "TCombobox", font=("Microsoft YaHei UI", 10), padding=(9, 7),
+            fieldbackground="#ffffff", background="#f2f2f7",
+            foreground="#1c1c1e", arrowcolor="#8e8e93"
         )
         style.map(
-            "TCombobox", fieldbackground=[("readonly", "#fbfcff")],
-            selectbackground=[("readonly", "#e8f0ff")],
-            selectforeground=[("readonly", "#334155")]
+            "TCombobox", fieldbackground=[("readonly", "#ffffff")],
+            selectbackground=[("readonly", "#d9eaff")],
+            selectforeground=[("readonly", "#1c1c1e")]
         )
         style.configure(
             "TEntry", font=("Microsoft YaHei UI", 11), padding=(10, 8),
-            fieldbackground="#fbfcff", foreground="#1e293b"
+            fieldbackground="#ffffff", foreground="#1c1c1e"
         )
 
         self.from_var = tk.StringVar(value="10")
@@ -390,22 +399,22 @@ class BaseConverterApp:
         )
         self._card = self.canvas.create_polygon(0, 0, 0, 0, smooth=True)
         self._header_rule = self.canvas.create_line(
-            0, 0, 0, 0, fill="#dfe8f5", width=1
+            0, 0, 0, 0, fill="#e5e5ea", width=1
         )
         self._title = self.canvas.create_text(
             0, 0, text="进制转换步骤演示器", anchor="n",
-            font=("Microsoft YaHei UI", 23, "bold"), fill="#263b5b"
+            font=("Microsoft YaHei UI", 23, "bold"), fill="#1c1c1e"
         )
         self._subtitle = self.canvas.create_text(
             0, 0, text="看得见每一步的数制转换", anchor="n",
-            font=("Microsoft YaHei UI", 10), fill="#70819a"
+            font=("Microsoft YaHei UI", 10), fill="#8e8e93"
         )
         self._brand_badge = self.canvas.create_polygon(
             0, 0, 0, 0, smooth=True
         )
         self._brand_label = self.canvas.create_text(
             0, 0, text="数网知来组", anchor="center",
-            font=("Microsoft YaHei UI", 10, "bold"), fill="#4776bd"
+            font=("Microsoft YaHei UI", 10, "bold"), fill="#007aff"
         )
 
         self.content = tk.Frame(self.canvas, bg="#ffffff")
@@ -427,7 +436,7 @@ class BaseConverterApp:
         panel.grid_columnconfigure(1, weight=1)
         panel.grid_rowconfigure(5, weight=1)
 
-        tk.Label(panel, text="输入数值：", bg="#ffffff", fg="#333333",
+        tk.Label(panel, text="输入数值", bg="#ffffff", fg="#3a3a3c",
                  font=("Microsoft YaHei UI", 10)).grid(
                      row=0, column=0, sticky="w", pady=(0, 14)
                  )
@@ -437,7 +446,7 @@ class BaseConverterApp:
         self.value_entry.grid(row=0, column=1, sticky="ew", pady=(0, 14))
         self.value_entry.bind("<Return>", lambda _event: self.convert())
 
-        tk.Label(panel, text="转换进制：", bg="#ffffff", fg="#333333",
+        tk.Label(panel, text="转换进制", bg="#ffffff", fg="#3a3a3c",
             font=("Microsoft YaHei UI", 10)
         ).grid(row=1, column=0, sticky="w", pady=(0, 12))
         actions = tk.Frame(panel, bg="#ffffff")
@@ -447,7 +456,7 @@ class BaseConverterApp:
             state="readonly", width=8
         )
         self.from_select.pack(side="left", padx=(0, 10))
-        ttk.Label(actions, text="→", foreground="#8ca0bc").pack(
+        ttk.Label(actions, text="→", foreground="#8e8e93").pack(
             side="left", padx=(0, 10)
         )
         self.to_select = ttk.Combobox(
@@ -473,19 +482,19 @@ class BaseConverterApp:
 
         self.hint_label = tk.Label(
             panel, text="支持正负数、小数及 2 / 8 / 10 / 16 进制；十六进制数位使用 A–F",
-            bg="#ffffff", fg="#8190a5", font=("Microsoft YaHei UI", 9),
+            bg="#ffffff", fg="#8e8e93", font=("Microsoft YaHei UI", 9),
             anchor="w", justify="left", wraplength=620
         )
         self.hint_label.grid(row=3, column=0, columnspan=2, sticky="ew",
                              pady=(0, 14))
 
         output_frame = tk.Frame(
-            panel, bg="#ffffff", highlightbackground="#e2e9f2",
-            highlightthickness=1
+            panel, bg="#ffffff", highlightbackground="#e5e5ea",
+            highlightthickness=1, bd=0
         )
         output_frame.grid(row=5, column=0, columnspan=2, sticky="nsew")
         self.result_label = tk.Label(
-            panel, text="等待计算", bg="#f1f6ff", fg="#426ca8",
+            panel, text="等待计算", bg="#eef5ff", fg="#007aff",
             font=("Microsoft YaHei UI", 11, "bold"), anchor="w",
             padx=12, pady=9
         )
@@ -493,11 +502,11 @@ class BaseConverterApp:
                                pady=(0, 8))
         self.output_text = tk.Text(
             output_frame, wrap="word", font=("Consolas", 10),
-            bg="#fbfcff", fg="#334155", relief="flat", padx=16, pady=14,
+            bg="#ffffff", fg="#1c1c1e", relief="flat", padx=16, pady=14,
             state="disabled", spacing1=2, spacing3=3
         )
         self.output_text.tag_configure(
-            "section", foreground="#4776bd",
+            "section", foreground="#007aff",
             font=("Microsoft YaHei UI", 10, "bold"), spacing1=8, spacing3=4
         )
         self.output_text.tag_configure(
@@ -511,16 +520,16 @@ class BaseConverterApp:
         scrollbar.pack(side="right", fill="y")
 
         side_panel = tk.Frame(
-            self.content, bg="#f7f9fd", width=190,
-            highlightbackground="#e8edf5", highlightthickness=1
+            self.content, bg="#f8f8fa", width=190,
+            highlightbackground="#e5e5ea", highlightthickness=1
         )
         side_panel.grid(row=0, column=1, sticky="nsew")
         side_panel.grid_propagate(False)
         side_panel.grid_rowconfigure(0, weight=1)
-        self.image_label = tk.Label(side_panel, bg="#f7f9fd")
+        self.image_label = tk.Label(side_panel, bg="#f8f8fa")
         self.image_label.grid(row=0, column=0, sticky="s")
         self.tip_label = tk.Label(
-            side_panel, text="准备就绪", bg="#edf3ff", fg="#5476a7",
+            side_panel, text="准备就绪", bg="#eef5ff", fg="#007aff",
             font=("Microsoft YaHei UI", 10, "bold"), wraplength=160,
             padx=12, pady=10
         )
@@ -560,8 +569,8 @@ class BaseConverterApp:
             self.canvas.delete(item)
         self._background_ids.clear()
 
-        columns, rows = 36, 24
-        start, end = (248, 246, 255), (237, 246, 255)
+        columns, rows = 48, 32
+        start, end = (244, 244, 249), (235, 240, 248)
         for row in range(rows):
             for column in range(columns):
                 ratio = (
@@ -590,7 +599,7 @@ class BaseConverterApp:
                                   top + card_height + 11, 24)
         )
         self.canvas.itemconfigure(
-            self._card_shadow_soft, fill="#e8edf5", outline="", smooth=True,
+            self._card_shadow_soft, fill="#e8e9ef", outline="", smooth=True,
             splinesteps=16
         )
         self.canvas.coords(
@@ -599,7 +608,7 @@ class BaseConverterApp:
                                   top + card_height + 6, 24)
         )
         self.canvas.itemconfigure(
-            self._card_shadow, fill="#dfe7f1", outline="", smooth=True,
+            self._card_shadow, fill="#e1e3e9", outline="", smooth=True,
             splinesteps=12
         )
         self.canvas.coords(
@@ -608,7 +617,7 @@ class BaseConverterApp:
                                   top + card_height, 24)
         )
         self.canvas.itemconfigure(
-            self._card, fill="#ffffff", outline="#e5ebf3", width=1,
+            self._card, fill="#ffffff", outline="#e5e5ea", width=1,
             smooth=True, splinesteps=16
         )
         self.canvas.coords(
@@ -647,14 +656,20 @@ class BaseConverterApp:
         dialog.resizable(False, False)
         dialog.transient(self.root)
         dialog.grab_set()
-        content = ttk.Frame(dialog, padding=18)
-        content.pack(fill="both", expand=True)
-        ttk.Label(content, text="小数精度（1–64 位）").grid(
+        content = tk.Frame(dialog, bg="#ffffff")
+        content.pack(fill="both", expand=True, padx=18, pady=18)
+        tk.Label(
+            content, text="小数精度（1–64 位）", bg="#ffffff", fg="#1c1c1e",
+            font=("Microsoft YaHei UI", 10)
+        ).grid(
             row=0, column=0, sticky="w", padx=(0, 12), pady=(0, 10)
         )
         ttk.Spinbox(content, textvariable=self.precision_var, from_=1,
                     to=MAX_PRECISION, width=7).grid(row=0, column=1, pady=(0, 10))
-        ttk.Label(content, text="精度处理方式").grid(
+        tk.Label(
+            content, text="精度处理方式", bg="#ffffff", fg="#1c1c1e",
+            font=("Microsoft YaHei UI", 10)
+        ).grid(
             row=1, column=0, sticky="w", padx=(0, 12)
         )
         ttk.Combobox(content, textvariable=self.rounding_var,
@@ -662,7 +677,7 @@ class BaseConverterApp:
                      width=12).grid(row=1, column=1)
         RoundedButton(
             content, text="完成", command=dialog.destroy, accent=True,
-            width=82, background="#f7f9fd"
+            width=82, background="#ffffff"
         ).grid(row=2, column=0, columnspan=2, sticky="e", pady=(16, 0))
 
     def _set_output(self, content):
@@ -684,9 +699,9 @@ class BaseConverterApp:
         self.image_label.configure(image=self._images[state])
         self.tip_label.configure(text=tip)
         colors = {
-            "normal": ("#edf3ff", "#5476a7"),
-            "error": ("#fff0f0", "#b94c55"),
-            "success": ("#eaf8f0", "#3b805a"),
+            "normal": ("#eef5ff", "#007aff"),
+            "error": ("#fff0f0", "#ff3b30"),
+            "success": ("#edf9f0", "#248a3d"),
         }
         background, foreground = colors[state]
         self.tip_label.configure(bg=background, fg=foreground)
