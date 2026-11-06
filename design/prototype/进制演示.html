@@ -2,6 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>进制转换步骤演示器</title>
     <style>
         * {
@@ -12,24 +13,24 @@
         body {
             font-family: "Microsoft Yahei", system-ui, sans-serif;
             background: linear-gradient(135deg, #FFF7F0, #F0F8FF);
-            padding: 48px 20px;
+            padding: 40px 16px;
         }
         .wrap {
-            max-width: 960px;
+            max-width: 1000px;
             margin: 0 auto;
         }
         h1 {
             text-align: center;
             font-weight: 600;
             color: #444;
-            margin-bottom: 32px;
+            margin-bottom: 28px;
             letter-spacing: 2px;
         }
         .container {
             background: #ffffffcc;
-            border-radius: 20px;
+            border-radius: 22px;
             padding: 32px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+            box-shadow: 0 8px 26px rgba(0, 0, 0, 0.08);
             display: grid;
             grid-template-columns: 1fr 220px;
             gap: 24px;
@@ -38,17 +39,18 @@
         .panel {
             display: flex;
             flex-direction: column;
-            gap: 18px;
+            gap: 16px;
         }
         .row {
             display: flex;
-            gap: 12px;
+            gap: 10px;
             flex-wrap: wrap;
             align-items: center;
         }
         label {
             font-weight: 500;
             color: #333;
+            white-space: nowrap;
         }
         input, select, button {
             padding: 10px 14px;
@@ -67,14 +69,15 @@
             background-color: #5893ee;
         }
         .result-box {
-            min-height: 220px;
+            min-height: 240px;
             background: #fff;
             border: 1px solid #e6e6e6;
             border-radius: 12px;
-            padding: 16px;
+            padding: 18px;
             white-space: pre-line;
             font-family: Consolas, monospace;
-            line-height: 1.6;
+            line-height: 1.7;
+            color: #222;
         }
         .nailong-area {
             text-align: center;
@@ -88,6 +91,15 @@
             color: #666;
             font-size: 14px;
         }
+        .hint {
+            font-size: 13px;
+            color: #888;
+        }
+        @media (max-width: 720px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+        }
     </style>
 </head>
 <body>
@@ -96,11 +108,18 @@
         <div class="container">
             <div class="panel">
                 <div class="row">
-                    <label>输入十进制整数：</label>
-                    <input id="numInput" placeholder="例如：100">
+                    <label>转换方向：</label>
+                    <select id="dirSelect">
+                        <option value="dec2other">十进制 → 其他进制</option>
+                        <option value="other2dec">其他进制 → 十进制</option>
+                    </select>
                 </div>
                 <div class="row">
-                    <label>目标进制：</label>
+                    <label id="srcLabel">输入十进制整数：</label>
+                    <input id="numInput" placeholder="输入数字">
+                </div>
+                <div class="row">
+                    <label id="baseLabel">目标进制：</label>
                     <select id="baseSelect">
                         <option value="2">二进制</option>
                         <option value="8">八进制</option>
@@ -109,6 +128,7 @@
                     <button id="calcBtn">开始计算</button>
                     <button id="clearBtn">清空</button>
                 </div>
+                <div class="hint" id="ruleHint">提示：支持正负整数，使用除基取余法</div>
                 <div class="result-box" id="outBox">等待输入，点击开始计算查看演算步骤</div>
             </div>
             <div class="nailong-area">
@@ -121,60 +141,122 @@
     <script>
         const numInput = document.getElementById('numInput');
         const baseSelect = document.getElementById('baseSelect');
+        const dirSelect = document.getElementById('dirSelect');
         const calcBtn = document.getElementById('calcBtn');
         const clearBtn = document.getElementById('clearBtn');
         const outBox = document.getElementById('outBox');
         const nailongImg = document.getElementById('nailongImg');
         const nailongTip = document.getElementById('nailongTip');
+        const srcLabel = document.getElementById('srcLabel');
+        const baseLabel = document.getElementById('baseLabel');
+        const ruleHint = document.getElementById('ruleHint');
 
-        calcBtn.onclick = function () {
-            const raw = numInput.value.trim();
-            const n = parseInt(raw);
-            const base = parseInt(baseSelect.value);
-
-            if (!/^-?\d+$/.test(raw) || isNaN(n)) {
-                outBox.textContent = '错误：请输入合法整数！';
-                nailongImg.src = './nailong_laugh.png';
-                nailongTip.textContent = '输入不对哦';
-                return;
+        dirSelect.onchange = function () {
+            if (dirSelect.value === 'dec2other') {
+                srcLabel.textContent = '输入十进制整数：';
+                baseLabel.textContent = '目标进制：';
+                ruleHint.textContent = '提示：支持正负整数，使用除基取余法';
+                numInput.placeholder = '例如：100';
+            } else {
+                srcLabel.textContent = '输入进制数字：';
+                baseLabel.textContent = '来源进制：';
+                ruleHint.textContent = '提示：二进制仅 0/1；八进制 0~7；十六进制 0~9、A~F';
+                numInput.placeholder = '例如：1101';
             }
-
-            if (n === 0) {
-                outBox.textContent = `转换结果：0\n除基取余演示：数字为 0，直接为 0`;
-                nailongImg.src = './nailong_ok.png';
-                nailongTip.textContent = '搞定啦';
-                return;
-            }
-
-            let text = `将十进制 ${n} 转为 ${base} 进制\n`;
-            let val = Math.abs(n);
-            const steps = [];
-
-            while (val > 0) {
-                const rem = val % base;
-                let ch;
-                if (rem < 10) ch = rem;
-                else ch = String.fromCharCode('A'.charCodeAt(0) + rem - 10);
-                steps.unshift(ch);
-                text += `${val} ÷ ${base} = ${Math.floor(val / base)}  ··· 余数 ${ch}\n`;
-                val = Math.floor(val / base);
-            }
-
-            let resStr = steps.join('');
-            if (n < 0) resStr = '-' + resStr;
-            text += `\n最终结果：${resStr}`;
-
-            outBox.textContent = text;
-            nailongImg.src = './nailong_ok.png';
-            nailongTip.textContent = '计算完成！';
+            resetAll();
         };
 
-        clearBtn.onclick = function () {
+        function resetAll() {
             numInput.value = '';
             outBox.textContent = '等待输入，点击开始计算查看演算步骤';
             nailongImg.src = './nailong_normal.png';
             nailongTip.textContent = '准备就绪';
+        }
+
+        function charToVal(c) {
+            if (c >= '0' && c <= '9') return c.charCodeAt(0) - 48;
+            const ch = c.toUpperCase();
+            if (ch >= 'A' && ch <= 'F') return ch.charCodeAt(0) - 'A'.charCodeAt(0) + 10;
+            return -1;
+        }
+
+        calcBtn.onclick = function () {
+            const raw = numInput.value.trim();
+            const base = parseInt(baseSelect.value);
+            if (!raw) {
+                outBox.textContent = '错误：输入不能为空！';
+                nailongImg.src = './nailong_laugh.png';
+                nailongTip.textContent = '还没填数字';
+                return;
+            }
+
+            if (dirSelect.value === 'dec2other') {
+                if (!/^-?\d+$/.test(raw)) {
+                    outBox.textContent = '错误：请输入合法十进制整数！';
+                    nailongImg.src = './nailong_laugh.png';
+                    nailongTip.textContent = '输入不对哦';
+                    return;
+                }
+                const n = parseInt(raw);
+                if (n === 0) {
+                    outBox.textContent = `转换结果：0\n除基取余演示：数字为 0，直接为 0`;
+                    nailongImg.src = './nailong_ok.png';
+                    nailongTip.textContent = '搞定啦';
+                    return;
+                }
+                let text = `十进制 ${n} → ${base} 进制（除基取余）\n`;
+                let val = Math.abs(n);
+                const steps = [];
+                while (val > 0) {
+                    const rem = val % base;
+                    let ch;
+                    if (rem < 10) ch = rem;
+                    else ch = String.fromCharCode('A'.charCodeAt(0) + rem - 10);
+                    steps.unshift(ch);
+                    text += `${val} ÷ ${base} = ${Math.floor(val / base)}  ··· 余数 ${ch}\n`;
+                    val = Math.floor(val / base);
+                }
+                let resStr = steps.join('');
+                if (n < 0) resStr = '-' + resStr;
+                text += `\n最终结果：${resStr}`;
+                outBox.textContent = text;
+                nailongImg.src = './nailong_ok.png';
+                nailongTip.textContent = '计算完成！';
+            } else {
+                let s = raw.toUpperCase();
+                let sign = 1;
+                if (s[0] === '-') {
+                    sign = -1;
+                    s = s.slice(1);
+                }
+                for (const ch of s) {
+                    const v = charToVal(ch);
+                    if (v < 0 || v >= base) {
+                        outBox.textContent = `错误：不符合 ${base} 进制字符！`;
+                        nailongImg.src = './nailong_laugh.png';
+                        nailongTip.textContent = '字符非法';
+                        return;
+                    }
+                }
+                let text = `${base} 进制 ${raw} → 十进制（按权展开）\n`;
+                let total = 0;
+                const len = s.length;
+                for (let i = 0; i < len; i++) {
+                    const v = charToVal(s[i]);
+                    const power = len - 1 - i;
+                    const item = v * (base ** power);
+                    text += `${v} × ${base}^${power} = ${item}\n`;
+                    total += item;
+                }
+                total *= sign;
+                text += `\n累加求和，最终十进制结果：${total}`;
+                outBox.textContent = text;
+                nailongImg.src = './nailong_ok.png';
+                nailongTip.textContent = '计算完成！';
+            }
         };
+
+        clearBtn.onclick = resetAll;
     </script>
 </body>
 </html>
