@@ -140,7 +140,7 @@ python main_optimized.py
 - 界面字体按 Windows 配置（`Microsoft YaHei UI` / `Consolas`），在 macOS/Linux 上会回退为系统默认字体。
 - 状态插画依赖 `design/prototype/nailong_normal_tk.png`、`nailong_laugh_tk.png`、`nailong_ok_tk.png`，删掉后界面功能正常但右侧留白。
 
-##仓库路径
+ ## 仓库路径
 https://gitee.com/IRISBAI/
 Computer-seminar-assignment
 
